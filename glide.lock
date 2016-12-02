@@ -1,0 +1,59 @@
+hash: cb2d01a5115567ffc2f3af76512e7ba195860d1f87a2eaabb160d1d151ddc8de
+updated: 2016-12-02T15:25:40.410641273-05:00
+imports:
+- name: github.com/enaml-ops/enaml
+  version: daa906ffdfea29e28f26a5965100f645736de450
+- name: github.com/enaml-ops/pluginlib
+  version: 399f71c718525e0b9481a633bbfde9c888638961
+  subpackages:
+  - cred
+  - pcli
+  - pluginutil
+  - productv1
+- name: github.com/hashicorp/go-plugin
+  version: 8cf118f7a2f0c7ef1c82f66d4f6ac77c7e27dc12
+- name: github.com/hashicorp/yamux
+  version: d1caa6c97c9fc1cc9e83bbe34d0603f9ff0ce8bd
+- name: github.com/op/go-logging
+  version: 970db520ece77730c7e4724c61121037378659d9
+- name: github.com/square/certstrap
+  version: b6aef507a0840bf78bac99e7ffa6e6eb5c2c3c9f
+  subpackages:
+  - pkix
+- name: github.com/xchapter7x/lo
+  version: e33b245fc7a8186582208abc2458c2691bff681c
+- name: gopkg.in/urfave/cli.v2
+  version: c72728f42438425ffcd487986936357e17ebba3f
+- name: gopkg.in/yaml.v2
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+testImports:
+- name: github.com/onsi/ginkgo
+  version: 462326b1628e124b23f42e87a8f2750e3c4e2d24
+  subpackages:
+  - config
+  - internal/codelocation
+  - internal/containernode
+  - internal/failer
+  - internal/leafnodes
+  - internal/remote
+  - internal/spec
+  - internal/specrunner
+  - internal/suite
+  - internal/testingtproxy
+  - internal/writer
+  - reporters
+  - reporters/stenographer
+  - types
+- name: github.com/onsi/gomega
+  version: a78ae492d53aad5a7a232d0d0462c14c400e3ee7
+  subpackages:
+  - format
+  - internal/assertion
+  - internal/asyncassertion
+  - internal/testingtsupport
+  - matchers
+  - matchers/support/goraph/bipartitegraph
+  - matchers/support/goraph/edge
+  - matchers/support/goraph/node
+  - matchers/support/goraph/util
+  - types

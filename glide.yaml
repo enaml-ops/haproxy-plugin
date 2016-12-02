@@ -1,0 +1,18 @@
+package: github.com/enaml-ops/haproxy-plugin
+import:
+- package: github.com/enaml-ops/enaml
+  version: ~0.0.17
+- package: github.com/enaml-ops/pluginlib
+  version: ~1.0.0
+  subpackages:
+  - cred
+  - pcli
+  - pluginutil
+  - productv1
+- package: gopkg.in/urfave/cli.v2
+  version: c72728f42438425ffcd487986936357e17ebba3f
+testImport:
+- package: github.com/onsi/ginkgo
+  version: ~1.2.0
+- package: github.com/onsi/gomega
+  version: ~1.0.0
