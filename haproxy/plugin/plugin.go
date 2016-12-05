@@ -27,6 +27,7 @@ type Plugin struct {
 	GoRouterIPs       []string `omg:"gorouter-ip"`
 	HaProxyIP         string   `omg:"haproxy-ip"`
 	PEMFiles          []string `omg:"cert-filepath"`
+	SyslogURL         string   `omg:"syslog-url,optional"`
 }
 
 // GetProduct generates a BOSH deployment manifest for haproxy.
@@ -101,6 +102,7 @@ func (p *Plugin) newJobs() []enaml.InstanceJob {
 				HaProxy: &haproxy.HaProxy{
 					BackendServers: p.GoRouterIPs,
 					SslPem:         p.newPEMs(),
+					SyslogServer:   p.SyslogURL,
 				},
 			},
 		},
@@ -194,6 +196,12 @@ func (p *Plugin) GetFlags() []pcli.Flag {
 			FlagType: pcli.StringSliceFlag,
 			Name:     "cert-filepath",
 			Usage:    "the path to your pem file containing entire chain (give multiple flags to use multiple pems)",
+		},
+
+		pcli.Flag{
+			FlagType: pcli.StringFlag,
+			Name:     "syslog-url",
+			Usage:    "url for the optionally targetted syslog drain",
 		},
 	}
 }

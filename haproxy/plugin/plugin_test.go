@@ -57,6 +57,7 @@ var _ = Describe("haproxy plugin", func() {
 		var haproxyJobProperties = new(haproxy.HaproxyJob)
 		var controlHaProxyIP = "1.1.1.1"
 		var controlNetworkName = "net1"
+		var controlSyslogURL = "1.2.3.4:888"
 		var controlBackendIPs = []string{
 			"10.0.0.20",
 			"10.0.0.21",
@@ -66,6 +67,7 @@ var _ = Describe("haproxy plugin", func() {
 			hplugin = &Plugin{Version: "0.0"}
 			manifestBytes, err := hplugin.GetProduct([]string{
 				"haproxy-command",
+				"--syslog-url", controlSyslogURL,
 				"--cert-filepath", "fixtures/pem1.pem",
 				"--haproxy-ip", controlHaProxyIP,
 				"--az", "z1",
@@ -82,6 +84,41 @@ var _ = Describe("haproxy plugin", func() {
 			err = yaml.Unmarshal(haproxyPropBytes, haproxyJobProperties)
 			Ω(err).ShouldNot(HaveOccurred())
 		})
+
+		Describe("syslog", func() {
+			Context("when passed a syslog url", func() {
+				It("should add the value to the job properties", func() {
+					Ω(haproxyJobProperties.HaProxy.SyslogServer).Should(Equal(controlSyslogURL))
+				})
+			})
+			Context("when NOT passed a syslog url", func() {
+				BeforeEach(func() {
+					var haproxyPropBytes []byte
+					hplugin = &Plugin{Version: "0.0"}
+					manifestBytes, err := hplugin.GetProduct([]string{
+						"haproxy-command",
+						"--cert-filepath", "fixtures/pem1.pem",
+						"--haproxy-ip", controlHaProxyIP,
+						"--az", "z1",
+						"--network-name", controlNetworkName,
+						"--stemcell-alias", "trusty",
+						"--gorouter-ip", controlBackendIPs[0],
+						"--gorouter-ip", controlBackendIPs[1],
+					}, []byte{}, nil)
+					Expect(err).ShouldNot(HaveOccurred())
+					manifest := enaml.NewDeploymentManifest(manifestBytes)
+					haproxyInstanceGroup = manifest.GetInstanceGroupByName(DefaultInstanceGroupName)
+					haproxyPropBytes, err = yaml.Marshal(haproxyInstanceGroup.GetJobByName(DefaultJobName).Properties)
+					Ω(err).ShouldNot(HaveOccurred())
+					err = yaml.Unmarshal(haproxyPropBytes, haproxyJobProperties)
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+				It("should add the value to the job properties", func() {
+					Ω(haproxyJobProperties.HaProxy.SyslogServer.(string)).Should(BeEmpty())
+				})
+			})
+		})
+
 		Describe("ssl_pem flag", func() {
 			Context("when given a single pem file path", func() {
 				It("then it should define a ssl_pem for the given file", func() {
