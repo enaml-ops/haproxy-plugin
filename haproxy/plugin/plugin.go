@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/enaml-ops/enaml"
+	"github.com/enaml-ops/haproxy-plugin/haproxy/enaml-gen/haproxy"
 	"github.com/enaml-ops/pluginlib/cred"
 	"github.com/enaml-ops/pluginlib/pcli"
 	"github.com/enaml-ops/pluginlib/pluginutil"
@@ -14,24 +15,23 @@ import (
 type Plugin struct {
 	Version string `omg:"-"`
 
-	DeploymentName    string
-	NetworkName       string
-	HaproxyReleaseVer string
-	StemcellName      string
-	StemcellVer       string
-	StemcellAlias     string
+	DeploymentName    string   `omg:"deployment-name"`
+	NetworkName       string   `omg:"network-name"`
+	HaproxyReleaseVer string   `omg:"haproxy-release-ver"`
+	StemcellName      string   `omg:"stemcell-name"`
+	StemcellVer       string   `omg:"stemcell-ver"`
+	StemcellAlias     string   `omg:"stemcell-alias"`
 	AZs               []string `omg:"az"`
+	GoRouterIPs       []string `omg:"gorouter-ip"`
 }
 
 // GetProduct generates a BOSH deployment manifest for haproxy.
 func (p *Plugin) GetProduct(args []string, cloudConfig []byte, cs cred.Store) ([]byte, error) {
 	c := pluginutil.NewContext(args, pluginutil.ToCliFlagArray(p.GetFlags()))
 	err := pcli.UnmarshalFlags(p, c)
-
 	if err != nil {
 		return nil, err
 	}
-
 	deploymentManifest := new(enaml.DeploymentManifest)
 	deploymentManifest.SetName(p.DeploymentName)
 	deploymentManifest.AddRelease(enaml.Release{Name: releaseName, Version: p.HaproxyReleaseVer})
@@ -47,11 +47,32 @@ func (p *Plugin) GetProduct(args []string, cloudConfig []byte, cs cred.Store) ([
 		Serial:          false,
 		Canaries:        1,
 	}
-	deploymentManifest.AddInstanceGroup(&enaml.InstanceGroup{
+	deploymentManifest.AddInstanceGroup(p.newInstanceGroup())
+	return deploymentManifest.Bytes(), nil
+}
+
+func (p *Plugin) newInstanceGroup() *enaml.InstanceGroup {
+	ig := &enaml.InstanceGroup{
+		Name:     DefaultInstanceGroupName,
 		AZs:      p.AZs,
 		Stemcell: p.StemcellAlias,
-	})
-	return deploymentManifest.Bytes(), nil
+		Jobs:     p.newJobs(),
+	}
+	return ig
+}
+
+func (p *Plugin) newJobs() []enaml.InstanceJob {
+	jobs := []enaml.InstanceJob{
+		enaml.InstanceJob{
+			Name: DefaultJobName,
+			Properties: &haproxy.HaproxyJob{
+				HaProxy: &haproxy.HaProxy{
+					BackendServers: p.GoRouterIPs,
+				},
+			},
+		},
+	}
+	return jobs
 }
 
 func makeEnvVarName(flagName string) string {
@@ -125,6 +146,11 @@ func (p *Plugin) GetFlags() []pcli.Flag {
 			Name:     "haproxy-release-ver",
 			Value:    releaseVersion,
 			Usage:    "the version of the release to use for the deployment",
+		},
+		pcli.Flag{
+			FlagType: pcli.StringSliceFlag,
+			Name:     "gorouter-ip",
+			Usage:    "gorouter ips (give flag multiple times for multiple IPs)",
 		},
 	}
 }
