@@ -11,7 +11,6 @@ import (
 	. "github.com/enaml-ops/haproxy-plugin/haproxy/plugin"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/xchapter7x/lo"
 )
 
 var _ = Describe("haproxy plugin", func() {
@@ -19,30 +18,30 @@ var _ = Describe("haproxy plugin", func() {
 
 	Context("When flags are read from environment variables", func() {
 		var controlAZName = "blah"
+		var manifestBytes []byte
+		var err error
+
 		BeforeEach(func() {
 			hplugin = &Plugin{Version: "0.0"}
 			os.Setenv("OMG_AZ", controlAZName)
+
+			manifestBytes, err = hplugin.GetProduct([]string{
+				"haproxy-command",
+				"--haproxy-ip", "asdfasdf",
+				"--network-name", "net1",
+				"--gorouter-ip", "1.2.3.4",
+			}, []byte{}, nil)
 		})
 		AfterEach(func() {
 			os.Setenv("OMG_AZ", "")
 		})
 
 		It("should pass validation of required flags", func() {
-			_, err := hplugin.GetProduct([]string{
-				"haproxy-command",
-				"--network-name", "net1",
-				"--gorouter-ip", "1.2.3.4",
-			}, []byte{}, nil)
 			Expect(err).ShouldNot(HaveOccurred(), "should pass env var isset required value check")
 			Expect(hplugin.AZs).Should(ConsistOf(controlAZName))
 		})
 
 		It("should properly set up the Availability Zones", func() {
-			manifestBytes, err := hplugin.GetProduct([]string{
-				"haproxy-command",
-				"--network-name", "net1",
-				"--gorouter-ip", "1.2.3.4",
-			}, []byte{}, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 			manifest := enaml.NewDeploymentManifest(manifestBytes)
 			for _, instanceGroup := range manifest.InstanceGroups {
@@ -52,33 +51,50 @@ var _ = Describe("haproxy plugin", func() {
 	})
 
 	Context("When a commnd line args are passed", func() {
+		var haproxyInstanceGroup *enaml.InstanceGroup
 		var haproxyJobProperties = new(haproxy.HaproxyJob)
+		var controlHaProxyIP = "1.1.1.1"
+		var controlNetworkName = "net1"
 		var controlBackendIPs = []string{
 			"10.0.0.20",
 			"10.0.0.21",
 		}
 		BeforeEach(func() {
+			var haproxyPropBytes []byte
 			hplugin = &Plugin{Version: "0.0"}
 			manifestBytes, err := hplugin.GetProduct([]string{
 				"haproxy-command",
+				"--haproxy-ip", controlHaProxyIP,
 				"--az", "z1",
-				"--network-name", "net1",
+				"--network-name", controlNetworkName,
 				"--stemcell-alias", "trusty",
 				"--gorouter-ip", controlBackendIPs[0],
 				"--gorouter-ip", controlBackendIPs[1],
 			}, []byte{}, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 			manifest := enaml.NewDeploymentManifest(manifestBytes)
-			haproxyIG := manifest.GetInstanceGroupByName(DefaultInstanceGroupName)
-			haproxyPropBytes, e := yaml.Marshal(haproxyIG.GetJobByName(DefaultJobName).Properties)
-			Ω(e).ShouldNot(HaveOccurred())
-			e = yaml.Unmarshal(haproxyPropBytes, haproxyJobProperties)
-			Ω(e).ShouldNot(HaveOccurred())
+			haproxyInstanceGroup = manifest.GetInstanceGroupByName(DefaultInstanceGroupName)
+			haproxyPropBytes, err = yaml.Marshal(haproxyInstanceGroup.GetJobByName(DefaultJobName).Properties)
+			Ω(err).ShouldNot(HaveOccurred())
+			err = yaml.Unmarshal(haproxyPropBytes, haproxyJobProperties)
+			Ω(err).ShouldNot(HaveOccurred())
+		})
+
+		Context("when given a ip for haproxy", func() {
+			It("should have a network name matching the given flag", func() {
+				Ω(haproxyInstanceGroup.Networks[0].Name).Should(Equal(controlNetworkName))
+			})
+
+			It("should properly set the static ip for the haproxy vm instance", func() {
+				Ω(haproxyInstanceGroup.Instances).Should(Equal(DefaultHaProxyInstanceCount), "we only ever want one haproxy VM for now")
+				Ω(len(haproxyInstanceGroup.Networks)).Should(BeNumerically(">", 0))
+				Ω(len(haproxyInstanceGroup.Networks[0].StaticIPs)).Should(Equal(DefaultHaProxyInstanceCount), "we only ever want one haproxy VM for now")
+				Ω(haproxyInstanceGroup.Networks[0].StaticIPs).Should(ConsistOf(controlHaProxyIP))
+			})
 		})
 
 		Context("when given config values for backend server info (go router ips)", func() {
 			It("then it should define a list of backend server IPs", func() {
-				lo.G.Debug("we should be here", haproxyJobProperties)
 				Ω(haproxyJobProperties.HaProxy.BackendServers).Should(ConsistOf(controlBackendIPs))
 			})
 		})
@@ -111,6 +127,7 @@ var _ = Describe("haproxy plugin", func() {
 				var err error
 				manifestBytes, err = hplugin.GetProduct([]string{
 					"haproxy-command",
+					"--haproxy-ip", controlHaProxyIP,
 					"--az", controlAZ,
 					"--network-name", "net1",
 					"--deployment-name", controlName,
@@ -128,7 +145,7 @@ var _ = Describe("haproxy plugin", func() {
 				Ω(manifest.Update.Canaries).ShouldNot(Equal(0), "number of canaries")
 			})
 
-			It("should properly set up the gemfire release", func() {
+			It("should properly set up the haproxy release", func() {
 				manifest := enaml.NewDeploymentManifest(manifestBytes)
 				Ω(manifest.Releases).ShouldNot(BeEmpty())
 				Ω(manifest.Releases[0]).ShouldNot(BeNil())

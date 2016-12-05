@@ -23,6 +23,7 @@ type Plugin struct {
 	StemcellAlias     string   `omg:"stemcell-alias"`
 	AZs               []string `omg:"az"`
 	GoRouterIPs       []string `omg:"gorouter-ip"`
+	HaProxyIP         string   `omg:"haproxy-ip"`
 }
 
 // GetProduct generates a BOSH deployment manifest for haproxy.
@@ -53,12 +54,25 @@ func (p *Plugin) GetProduct(args []string, cloudConfig []byte, cs cred.Store) ([
 
 func (p *Plugin) newInstanceGroup() *enaml.InstanceGroup {
 	ig := &enaml.InstanceGroup{
-		Name:     DefaultInstanceGroupName,
-		AZs:      p.AZs,
-		Stemcell: p.StemcellAlias,
-		Jobs:     p.newJobs(),
+		Instances: DefaultHaProxyInstanceCount,
+		Name:      DefaultInstanceGroupName,
+		AZs:       p.AZs,
+		Stemcell:  p.StemcellAlias,
+		Jobs:      p.newJobs(),
+		Networks:  p.newNetworks(),
 	}
 	return ig
+}
+
+func (p *Plugin) newNetworks() []enaml.Network {
+	var nets []enaml.Network
+	nets = append(nets, enaml.Network{
+		Name: p.NetworkName,
+		StaticIPs: []string{
+			p.HaProxyIP,
+		},
+	})
+	return nets
 }
 
 func (p *Plugin) newJobs() []enaml.InstanceJob {
@@ -151,6 +165,11 @@ func (p *Plugin) GetFlags() []pcli.Flag {
 			FlagType: pcli.StringSliceFlag,
 			Name:     "gorouter-ip",
 			Usage:    "gorouter ips (give flag multiple times for multiple IPs)",
+		},
+		pcli.Flag{
+			FlagType: pcli.StringFlag,
+			Name:     "haproxy-ip",
+			Usage:    "ip for haproxy vm to listen on",
 		},
 	}
 }
