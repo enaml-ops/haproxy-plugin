@@ -2,6 +2,7 @@ package haproxy_plugin_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	yaml "gopkg.in/yaml.v2"
@@ -27,6 +28,7 @@ var _ = Describe("haproxy plugin", func() {
 
 			manifestBytes, err = hplugin.GetProduct([]string{
 				"haproxy-command",
+				"--cert-filepath", "fixtures/pem1.pem",
 				"--haproxy-ip", "asdfasdf",
 				"--network-name", "net1",
 				"--gorouter-ip", "1.2.3.4",
@@ -64,6 +66,7 @@ var _ = Describe("haproxy plugin", func() {
 			hplugin = &Plugin{Version: "0.0"}
 			manifestBytes, err := hplugin.GetProduct([]string{
 				"haproxy-command",
+				"--cert-filepath", "fixtures/pem1.pem",
 				"--haproxy-ip", controlHaProxyIP,
 				"--az", "z1",
 				"--network-name", controlNetworkName,
@@ -78,6 +81,54 @@ var _ = Describe("haproxy plugin", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			err = yaml.Unmarshal(haproxyPropBytes, haproxyJobProperties)
 			Ω(err).ShouldNot(HaveOccurred())
+		})
+		Describe("ssl_pem flag", func() {
+			Context("when given a single pem file path", func() {
+				It("then it should define a ssl_pem for the given file", func() {
+					var controlPEM string
+					pemBytes, _ := ioutil.ReadFile("fixtures/pem1.pem")
+					controlPEM = string(pemBytes)
+					sslPemRecord := haproxyJobProperties.HaProxy.SslPem.([]interface{})
+					Ω(len(sslPemRecord)).Should(Equal(1), "for only one file given should create only a single record")
+					Ω(sslPemRecord[0]).Should(Equal(controlPEM))
+				})
+			})
+
+			Context("when given multiple pem file paths", func() {
+				BeforeEach(func() {
+					var haproxyPropBytes []byte
+					hplugin = &Plugin{Version: "0.0"}
+					manifestBytes, err := hplugin.GetProduct([]string{
+						"haproxy-command",
+						"--cert-filepath", "fixtures/pem1.pem",
+						"--cert-filepath", "fixtures/pem2.pem",
+						"--haproxy-ip", controlHaProxyIP,
+						"--az", "z1",
+						"--network-name", controlNetworkName,
+						"--stemcell-alias", "trusty",
+						"--gorouter-ip", controlBackendIPs[0],
+						"--gorouter-ip", controlBackendIPs[1],
+					}, []byte{}, nil)
+					Expect(err).ShouldNot(HaveOccurred())
+					manifest := enaml.NewDeploymentManifest(manifestBytes)
+					haproxyInstanceGroup = manifest.GetInstanceGroupByName(DefaultInstanceGroupName)
+					haproxyPropBytes, err = yaml.Marshal(haproxyInstanceGroup.GetJobByName(DefaultJobName).Properties)
+					Ω(err).ShouldNot(HaveOccurred())
+					err = yaml.Unmarshal(haproxyPropBytes, haproxyJobProperties)
+					Ω(err).ShouldNot(HaveOccurred())
+				})
+				It("then it should define a ssl_pem for the given file", func() {
+					var controlPEM1 string
+					var controlPEM2 string
+					pemBytes, _ := ioutil.ReadFile("fixtures/pem1.pem")
+					controlPEM1 = string(pemBytes)
+					pemBytes, _ = ioutil.ReadFile("fixtures/pem2.pem")
+					controlPEM2 = string(pemBytes)
+					sslPemRecord := haproxyJobProperties.HaProxy.SslPem.([]interface{})
+					Ω(len(sslPemRecord)).Should(Equal(2), "we should have a pem for each file given as an argument")
+					Ω(sslPemRecord).Should(ConsistOf(controlPEM1, controlPEM2))
+				})
+			})
 		})
 
 		Context("when given a ip for haproxy", func() {
@@ -130,6 +181,7 @@ var _ = Describe("haproxy plugin", func() {
 					"--haproxy-ip", controlHaProxyIP,
 					"--az", controlAZ,
 					"--network-name", "net1",
+					"--cert-filepath", "fixtures/pem1.pem",
 					"--deployment-name", controlName,
 					"--stemcell-alias", controlStemcellAlias,
 					"--gorouter-ip", controlGoRouterIP,

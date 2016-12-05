@@ -2,6 +2,7 @@ package haproxy_plugin
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/enaml-ops/enaml"
@@ -10,6 +11,7 @@ import (
 	"github.com/enaml-ops/pluginlib/pcli"
 	"github.com/enaml-ops/pluginlib/pluginutil"
 	"github.com/enaml-ops/pluginlib/productv1"
+	"github.com/xchapter7x/lo"
 )
 
 type Plugin struct {
@@ -24,6 +26,7 @@ type Plugin struct {
 	AZs               []string `omg:"az"`
 	GoRouterIPs       []string `omg:"gorouter-ip"`
 	HaProxyIP         string   `omg:"haproxy-ip"`
+	PEMFiles          []string `omg:"cert-filepath"`
 }
 
 // GetProduct generates a BOSH deployment manifest for haproxy.
@@ -75,6 +78,21 @@ func (p *Plugin) newNetworks() []enaml.Network {
 	return nets
 }
 
+func (p *Plugin) newPEMs() []string {
+	var pems []string
+
+	for _, pempath := range p.PEMFiles {
+		pem, err := ioutil.ReadFile(pempath)
+
+		if err != nil {
+			lo.G.Errorf("cant read pem file!!!, @ '%v' ", pempath)
+			break
+		}
+		pems = append(pems, string(pem))
+	}
+	return pems
+}
+
 func (p *Plugin) newJobs() []enaml.InstanceJob {
 	jobs := []enaml.InstanceJob{
 		enaml.InstanceJob{
@@ -82,6 +100,7 @@ func (p *Plugin) newJobs() []enaml.InstanceJob {
 			Properties: &haproxy.HaproxyJob{
 				HaProxy: &haproxy.HaProxy{
 					BackendServers: p.GoRouterIPs,
+					SslPem:         p.newPEMs(),
 				},
 			},
 		},
@@ -170,6 +189,11 @@ func (p *Plugin) GetFlags() []pcli.Flag {
 			FlagType: pcli.StringFlag,
 			Name:     "haproxy-ip",
 			Usage:    "ip for haproxy vm to listen on",
+		},
+		pcli.Flag{
+			FlagType: pcli.StringSliceFlag,
+			Name:     "cert-filepath",
+			Usage:    "the path to your pem file containing entire chain (give multiple flags to use multiple pems)",
 		},
 	}
 }
