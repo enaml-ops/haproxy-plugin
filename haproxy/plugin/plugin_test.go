@@ -239,6 +239,8 @@ var _ = Describe("haproxy plugin", func() {
 
 			var manifestBytes []byte
 			var controlStemcellAlias = "ubuntu-magic"
+			var controlStemcellURL = "ubuntu-URL"
+			var controlStemcellSHA = "ubuntu-SHA"
 			var controlName = "haproxy-name"
 			var controlAZ = "z1"
 			var controlGoRouterIP = "1.2.3.4"
@@ -253,6 +255,8 @@ var _ = Describe("haproxy plugin", func() {
 					"--cert-filepath", "fixtures/pem1.pem",
 					"--deployment-name", controlName,
 					"--stemcell-alias", controlStemcellAlias,
+					"--stemcell-url", controlStemcellURL,
+					"--stemcell-sha", controlStemcellSHA,
 					"--gorouter-ip", controlGoRouterIP,
 				}, []byte{}, nil)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -278,6 +282,8 @@ var _ = Describe("haproxy plugin", func() {
 				manifest := enaml.NewDeploymentManifest(manifestBytes)
 				Ω(manifest.Stemcells).ShouldNot(BeNil())
 				Ω(manifest.Stemcells[0].Alias).Should(Equal(controlStemcellAlias))
+				Ω(manifest.Stemcells[0].URL).Should(Equal(controlStemcellURL))
+				Ω(manifest.Stemcells[0].SHA1).Should(Equal(controlStemcellSHA))
 				for _, instanceGroup := range manifest.InstanceGroups {
 					Expect(instanceGroup.Stemcell).Should(Equal(controlStemcellAlias), fmt.Sprintf("stemcell for instance group %v was not set properly", instanceGroup.Name))
 				}

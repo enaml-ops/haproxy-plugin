@@ -20,9 +20,13 @@ type Plugin struct {
 	DeploymentName      string   `omg:"deployment-name"`
 	NetworkName         string   `omg:"network-name"`
 	HaproxyReleaseVer   string   `omg:"haproxy-release-ver"`
+	HaproxyReleaseURL   string   `omg:"haproxy-release-url,optional"`
+	HaproxyReleaseSHA   string   `omg:"haproxy-release-sha,optional"`
 	StemcellName        string   `omg:"stemcell-name"`
 	StemcellVer         string   `omg:"stemcell-ver"`
 	StemcellAlias       string   `omg:"stemcell-alias"`
+	StemcellURL         string   `omg:"stemcell-url,optional"`
+	StemcellSHA         string   `omg:"stemcell-sha,optional"`
 	AZs                 []string `omg:"az"`
 	GoRouterIPs         []string `omg:"gorouter-ip"`
 	HaProxyIP           string   `omg:"haproxy-ip"`
@@ -41,11 +45,18 @@ func (p *Plugin) GetProduct(args []string, cloudConfig []byte, cs cred.Store) ([
 	}
 	deploymentManifest := new(enaml.DeploymentManifest)
 	deploymentManifest.SetName(p.DeploymentName)
-	deploymentManifest.AddRelease(enaml.Release{Name: releaseName, Version: p.HaproxyReleaseVer})
+	deploymentManifest.AddRelease(enaml.Release{
+		Name:    releaseName,
+		Version: p.HaproxyReleaseVer,
+		URL:     p.HaproxyReleaseURL,
+		SHA1:    p.HaproxyReleaseSHA,
+	})
 	deploymentManifest.AddStemcell(enaml.Stemcell{
 		OS:      p.StemcellName,
 		Version: p.StemcellVer,
 		Alias:   p.StemcellAlias,
+		URL:     p.StemcellURL,
+		SHA1:    p.StemcellSHA,
 	})
 	deploymentManifest.Update = enaml.Update{
 		MaxInFlight:     1,
@@ -131,6 +142,8 @@ func (p *Plugin) GetMeta() product.Meta {
 			enaml.Release{
 				Name:    releaseName,
 				Version: releaseVersion,
+				URL:     DefaultReleaseURL,
+				SHA1:    DefaultReleaseSHA,
 			},
 		},
 		Properties: map[string]interface{}{
@@ -178,13 +191,35 @@ func (p *Plugin) GetFlags() []pcli.Flag {
 			FlagType: pcli.StringFlag,
 			Name:     "stemcell-ver",
 			Value:    p.GetMeta().Stemcell.Version,
-			Usage:    "the name of the stemcell you with to use",
+			Usage:    "the version of the stemcell you with to use",
+		},
+		pcli.Flag{
+			FlagType: pcli.StringFlag,
+			Name:     "stemcell-url",
+			Usage:    "the url of the stemcell you with to use (this is optional: it will use a stemcell that already exists in bosh by default)",
+		},
+		pcli.Flag{
+			FlagType: pcli.StringFlag,
+			Name:     "stemcell-sha",
+			Usage:    "the sha of the stemcell you with to use (if you're giving a optional stemcell URL)",
 		},
 		pcli.Flag{
 			FlagType: pcli.StringFlag,
 			Name:     "haproxy-release-ver",
 			Value:    releaseVersion,
 			Usage:    "the version of the release to use for the deployment",
+		},
+		pcli.Flag{
+			FlagType: pcli.StringFlag,
+			Name:     "haproxy-release-url",
+			Value:    DefaultReleaseURL,
+			Usage:    "the URL of the release to use for the deployment",
+		},
+		pcli.Flag{
+			FlagType: pcli.StringFlag,
+			Name:     "haproxy-release-sha",
+			Value:    DefaultReleaseSHA,
+			Usage:    "the SHA of the release to use for the deployment",
 		},
 		pcli.Flag{
 			FlagType: pcli.StringSliceFlag,
