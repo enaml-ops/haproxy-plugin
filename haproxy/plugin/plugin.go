@@ -17,17 +17,19 @@ import (
 type Plugin struct {
 	Version string `omg:"-"`
 
-	DeploymentName    string   `omg:"deployment-name"`
-	NetworkName       string   `omg:"network-name"`
-	HaproxyReleaseVer string   `omg:"haproxy-release-ver"`
-	StemcellName      string   `omg:"stemcell-name"`
-	StemcellVer       string   `omg:"stemcell-ver"`
-	StemcellAlias     string   `omg:"stemcell-alias"`
-	AZs               []string `omg:"az"`
-	GoRouterIPs       []string `omg:"gorouter-ip"`
-	HaProxyIP         string   `omg:"haproxy-ip"`
-	PEMFiles          []string `omg:"cert-filepath"`
-	SyslogURL         string   `omg:"syslog-url,optional"`
+	DeploymentName      string   `omg:"deployment-name"`
+	NetworkName         string   `omg:"network-name"`
+	HaproxyReleaseVer   string   `omg:"haproxy-release-ver"`
+	StemcellName        string   `omg:"stemcell-name"`
+	StemcellVer         string   `omg:"stemcell-ver"`
+	StemcellAlias       string   `omg:"stemcell-alias"`
+	AZs                 []string `omg:"az"`
+	GoRouterIPs         []string `omg:"gorouter-ip"`
+	HaProxyIP           string   `omg:"haproxy-ip"`
+	PEMFiles            []string `omg:"cert-filepath"`
+	SyslogURL           string   `omg:"syslog-url,optional"`
+	InternalOnlyDomains []string `omg:"internal-only-domain,optional"`
+	TrustedDomainCidrs  []string `omg:"trusted-domain-cidr,optional"`
 }
 
 // GetProduct generates a BOSH deployment manifest for haproxy.
@@ -100,9 +102,11 @@ func (p *Plugin) newJobs() []enaml.InstanceJob {
 			Name: DefaultJobName,
 			Properties: &haproxy.HaproxyJob{
 				HaProxy: &haproxy.HaProxy{
-					BackendServers: p.GoRouterIPs,
-					SslPem:         p.newPEMs(),
-					SyslogServer:   p.SyslogURL,
+					BackendServers:      p.GoRouterIPs,
+					SslPem:              p.newPEMs(),
+					SyslogServer:        p.SyslogURL,
+					TrustedDomainCidrs:  strings.Join(p.TrustedDomainCidrs, " "),
+					InternalOnlyDomains: p.InternalOnlyDomains,
 				},
 			},
 		},
@@ -197,11 +201,20 @@ func (p *Plugin) GetFlags() []pcli.Flag {
 			Name:     "cert-filepath",
 			Usage:    "the path to your pem file containing entire chain (give multiple flags to use multiple pems)",
 		},
-
 		pcli.Flag{
 			FlagType: pcli.StringFlag,
 			Name:     "syslog-url",
 			Usage:    "url for the optionally targetted syslog drain",
+		},
+		pcli.Flag{
+			FlagType: pcli.StringSliceFlag,
+			Name:     "internal-only-domain",
+			Usage:    "domains for internal-only apps/services - not hostnames for the apps/services (give multiple flags to use multiple domains)",
+		},
+		pcli.Flag{
+			FlagType: pcli.StringSliceFlag,
+			Name:     "trusted-domain-cidr",
+			Usage:    "trusted domain cidrs to be used with internal only domains (give multiple flags to use multiple cidrs)",
 		},
 	}
 }

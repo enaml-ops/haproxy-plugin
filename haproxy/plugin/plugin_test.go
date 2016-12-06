@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	yaml "gopkg.in/yaml.v2"
 
@@ -62,6 +63,14 @@ var _ = Describe("haproxy plugin", func() {
 			"10.0.0.20",
 			"10.0.0.21",
 		}
+		var controlDomains = []string{
+			"blah.domain.io",
+			"bleh.dooda.io",
+		}
+		var controlCIDRs = []string{
+			"0.0.0.0/24",
+			"1.1.1.1/24",
+		}
 		BeforeEach(func() {
 			var haproxyPropBytes []byte
 			hplugin = &Plugin{Version: "0.0"}
@@ -75,6 +84,10 @@ var _ = Describe("haproxy plugin", func() {
 				"--stemcell-alias", "trusty",
 				"--gorouter-ip", controlBackendIPs[0],
 				"--gorouter-ip", controlBackendIPs[1],
+				"--internal-only-domain", controlDomains[0],
+				"--internal-only-domain", controlDomains[1],
+				"--trusted-domain-cidr", controlCIDRs[0],
+				"--trusted-domain-cidr", controlCIDRs[1],
 			}, []byte{}, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 			manifest := enaml.NewDeploymentManifest(manifestBytes)
@@ -83,6 +96,25 @@ var _ = Describe("haproxy plugin", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 			err = yaml.Unmarshal(haproxyPropBytes, haproxyJobProperties)
 			Ω(err).ShouldNot(HaveOccurred())
+		})
+
+		Describe("internal only domains", func() {
+			Context("when called with a list of internal only domains", func() {
+
+				It("should configure the deployment with internal only domains", func() {
+					Ω(haproxyJobProperties.HaProxy.InternalOnlyDomains).Should(HaveLen(len(controlDomains)))
+					Ω(haproxyJobProperties.HaProxy.InternalOnlyDomains).Should(ConsistOf(controlDomains))
+				})
+			})
+		})
+
+		Describe("trusted domain cidrs", func() {
+			Context("when called with a list of trusted domain cidrs", func() {
+				It("should configure the deployment with trusted domain cidrs", func() {
+					listOfCIDRs := strings.Split(haproxyJobProperties.HaProxy.TrustedDomainCidrs.(string), " ")
+					Ω(listOfCIDRs).Should(ConsistOf(controlCIDRs))
+				})
+			})
 		})
 
 		Describe("syslog", func() {
