@@ -109,19 +109,27 @@ func (p *Plugin) newPEMs() []string {
 	return pems
 }
 
+func (p *Plugin) newHaProxy() *haproxy.HaProxy {
+	ha := &haproxy.HaProxy{
+		BackendServers:      p.GoRouterIPs,
+		SslPem:              p.newPEMs(),
+		TrustedDomainCidrs:  strings.Join(p.TrustedDomainCidrs, " "),
+		InternalOnlyDomains: p.InternalOnlyDomains,
+	}
+
+	if p.SyslogURL != "" {
+		ha.SyslogServer = p.SyslogURL
+	}
+	return ha
+}
+
 func (p *Plugin) newJobs() []enaml.InstanceJob {
 	jobs := []enaml.InstanceJob{
 		enaml.InstanceJob{
 			Release: releaseName,
 			Name:    DefaultJobName,
 			Properties: &haproxy.HaproxyJob{
-				HaProxy: &haproxy.HaProxy{
-					BackendServers:      p.GoRouterIPs,
-					SslPem:              p.newPEMs(),
-					SyslogServer:        p.SyslogURL,
-					TrustedDomainCidrs:  strings.Join(p.TrustedDomainCidrs, " "),
-					InternalOnlyDomains: p.InternalOnlyDomains,
-				},
+				HaProxy: p.newHaProxy(),
 			},
 		},
 	}

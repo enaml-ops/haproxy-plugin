@@ -126,6 +126,7 @@ var _ = Describe("haproxy plugin", func() {
 				})
 			})
 			Context("when NOT passed a syslog url", func() {
+				var haproxyJobProperties = new(haproxy.HaproxyJob)
 				BeforeEach(func() {
 					var haproxyPropBytes []byte
 					hplugin = &Plugin{Version: "0.0"}
@@ -148,8 +149,8 @@ var _ = Describe("haproxy plugin", func() {
 					err = yaml.Unmarshal(haproxyPropBytes, haproxyJobProperties)
 					Ω(err).ShouldNot(HaveOccurred())
 				})
-				It("should add the value to the job properties", func() {
-					Ω(haproxyJobProperties.HaProxy.SyslogServer.(string)).Should(BeEmpty())
+				It("should NOT add the value to the job properties", func() {
+					Ω(haproxyJobProperties.HaProxy.SyslogServer).Should(BeNil())
 				})
 			})
 		})
