@@ -34,6 +34,7 @@ type Plugin struct {
 	SyslogURL           string   `omg:"syslog-url,optional"`
 	InternalOnlyDomains []string `omg:"internal-only-domain,optional"`
 	TrustedDomainCidrs  []string `omg:"trusted-domain-cidr,optional"`
+	VMType              string   `omg:"vm-type"`
 }
 
 // GetProduct generates a BOSH deployment manifest for haproxy.
@@ -71,6 +72,7 @@ func (p *Plugin) GetProduct(args []string, cloudConfig []byte, cs cred.Store) ([
 
 func (p *Plugin) newInstanceGroup() *enaml.InstanceGroup {
 	ig := &enaml.InstanceGroup{
+		VMType:    p.VMType,
 		Instances: DefaultHaProxyInstanceCount,
 		Name:      DefaultInstanceGroupName,
 		AZs:       p.AZs,
@@ -170,6 +172,11 @@ func (p *Plugin) GetFlags() []pcli.Flag {
 			FlagType: pcli.StringSliceFlag,
 			Name:     "az",
 			Usage:    "the list of Availability Zones where you wish to deploy gemfire",
+		},
+		pcli.Flag{
+			FlagType: pcli.StringFlag,
+			Name:     "vm-type",
+			Usage:    "the name of the vm type you wish to use for your haproxy",
 		},
 		pcli.Flag{
 			FlagType: pcli.StringFlag,

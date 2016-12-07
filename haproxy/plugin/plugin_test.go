@@ -30,6 +30,7 @@ var _ = Describe("haproxy plugin", func() {
 			manifestBytes, err = hplugin.GetProduct([]string{
 				"haproxy-command",
 				"--cert-filepath", "fixtures/pem1.pem",
+				"--vm-type", "sadfasdf",
 				"--haproxy-ip", "asdfasdf",
 				"--network-name", "net1",
 				"--gorouter-ip", "1.2.3.4",
@@ -82,6 +83,7 @@ var _ = Describe("haproxy plugin", func() {
 				"--az", "z1",
 				"--network-name", controlNetworkName,
 				"--stemcell-alias", "trusty",
+				"--vm-type", "sadfasdf",
 				"--gorouter-ip", controlBackendIPs[0],
 				"--gorouter-ip", controlBackendIPs[1],
 				"--internal-only-domain", controlDomains[0],
@@ -134,6 +136,7 @@ var _ = Describe("haproxy plugin", func() {
 						"--az", "z1",
 						"--network-name", controlNetworkName,
 						"--stemcell-alias", "trusty",
+						"--vm-type", "sadfasdf",
 						"--gorouter-ip", controlBackendIPs[0],
 						"--gorouter-ip", controlBackendIPs[1],
 					}, []byte{}, nil)
@@ -175,6 +178,7 @@ var _ = Describe("haproxy plugin", func() {
 						"--az", "z1",
 						"--network-name", controlNetworkName,
 						"--stemcell-alias", "trusty",
+						"--vm-type", "sadfasdf",
 						"--gorouter-ip", controlBackendIPs[0],
 						"--gorouter-ip", controlBackendIPs[1],
 					}, []byte{}, nil)
@@ -244,6 +248,7 @@ var _ = Describe("haproxy plugin", func() {
 			var controlName = "haproxy-name"
 			var controlAZ = "z1"
 			var controlGoRouterIP = "1.2.3.4"
+			var controlVMType = "massive"
 
 			BeforeEach(func() {
 				var err error
@@ -258,8 +263,17 @@ var _ = Describe("haproxy plugin", func() {
 					"--stemcell-url", controlStemcellURL,
 					"--stemcell-sha", controlStemcellSHA,
 					"--gorouter-ip", controlGoRouterIP,
+					"--vm-type", controlVMType,
 				}, []byte{}, nil)
 				Expect(err).ShouldNot(HaveOccurred())
+			})
+
+			It("should set a valid VMType", func() {
+				manifest := enaml.NewDeploymentManifest(manifestBytes)
+				for _, instanceGroup := range manifest.InstanceGroups {
+					Expect(instanceGroup.VMType).ShouldNot(BeEmpty())
+					Expect(instanceGroup.VMType).Should(Equal(controlVMType))
+				}
 			})
 
 			It("should set a valid release on the instance groups' jobs", func() {
