@@ -110,7 +110,8 @@ func (p *Plugin) newPEMs() []string {
 func (p *Plugin) newJobs() []enaml.InstanceJob {
 	jobs := []enaml.InstanceJob{
 		enaml.InstanceJob{
-			Name: DefaultJobName,
+			Release: releaseName,
+			Name:    DefaultJobName,
 			Properties: &haproxy.HaproxyJob{
 				HaProxy: &haproxy.HaProxy{
 					BackendServers:      p.GoRouterIPs,

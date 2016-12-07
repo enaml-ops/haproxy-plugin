@@ -262,6 +262,15 @@ var _ = Describe("haproxy plugin", func() {
 				Expect(err).ShouldNot(HaveOccurred())
 			})
 
+			It("should set a valid release on the instance groups' jobs", func() {
+				manifest := enaml.NewDeploymentManifest(manifestBytes)
+				for _, instanceGroup := range manifest.InstanceGroups {
+					for _, job := range instanceGroup.Jobs {
+						Expect(job.Release).ShouldNot(BeEmpty())
+					}
+				}
+			})
+
 			It("should properly set up the Update segment", func() {
 				manifest := enaml.NewDeploymentManifest(manifestBytes)
 				Ω(manifest.Update.MaxInFlight).ShouldNot(Equal(0), "max in flight")
