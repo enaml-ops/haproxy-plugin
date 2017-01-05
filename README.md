@@ -1,5 +1,7 @@
 HAPROXY Enaml Plugin for OMG
-
+## this plugin provides support for multiple certs and configuration of trusted
+## domains/cidr ranges. this is useful when trying to employ a L shaped network
+## topology in front of PCF.
 
 ### Plugin setup
 ```
