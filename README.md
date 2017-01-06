@@ -1,5 +1,5 @@
 HAPROXY Enaml Plugin for OMG
-## This enaml plugin provides support in the HAProxy release for multiple certs and configuration of trusted domains/cidr ranges, which the HAProxy in PCF Elastic Runtime does not provide by default. These features useful when trying to employ a L-shaped network topology (private-only system access vs. public access to apps) in front of PCF and you would like to add SSL certificates on a per-app basis, rather than one wildcard cert for the whole domain.
+## This enaml plugin provides support in the HAProxy release for multiple certs and configuration of trusted domains/cidr ranges, which the HAProxy in PCF Elastic Runtime does not provide by default. These features are useful when trying to employ a L-shaped network topology (private-only system access vs. public access to apps) in front of PCF and you would like to add SSL certificates on a per-app basis, rather than one wildcard cert for the whole domain.
 
 ### Plugin setup
 ```
